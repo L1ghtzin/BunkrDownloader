@@ -26,6 +26,7 @@ from src.config import (
     SkippedReason,
 )
 from src.file_utils import truncate_filename, write_on_session_log
+from src.integrations.telegram_uploader import TelegramUploader
 
 from .download_utils import save_file_with_progress
 
@@ -100,12 +101,12 @@ class MediaDownloader:
         final_path = Path(self.session_info.download_path) / formatted_filename
 
         # Skip download if the file exists or is blacklisted
-        if self._skip_file_download(final_path):
+        if self._skip_file_download(str(final_path)):
             return None
 
         # Attempt to download the file with retries
         try:
-            failed_download = self.attempt_download(final_path)
+            failed_download = self.attempt_download(str(final_path))
 
         except requests.exceptions.ConnectionError:
             self.live_manager.update_log(
@@ -114,9 +115,36 @@ class MediaDownloader:
             )
             failed_download = True
 
-        # Handle failed download after retries
         if failed_download:
             return self._handle_failed_download(is_final_attempt=is_final_attempt)
+
+        # Telegram Upload Hook
+        tg_chat_id = getattr(self.session_info.args, "tg", None)
+        if tg_chat_id:
+            tg_token = getattr(self.session_info.args, "tg_token", None)
+            tg_topic = getattr(self.session_info.args, "tg_topic", None)
+            delete_after = getattr(self.session_info.args, "delete_after_upload", False)
+            
+            try:
+                uploader = TelegramUploader(token=tg_token)
+                upload_success = uploader.upload_file(
+                    chat_id=tg_chat_id,
+                    file_path=final_path,
+                    message_thread_id=tg_topic,
+                    live_manager=self.live_manager,
+                )
+                
+                if upload_success and delete_after:
+                    final_path.unlink(missing_ok=True)
+                    self.live_manager.update_log(
+                        event="File Deleted", 
+                        details=f"Deleted local file: {final_path.name}"
+                    )
+            except Exception as e:
+                self.live_manager.update_log(
+                    event="Telegram Error",
+                    details=f"Error initializing or uploading exactly to Telegram: {e}"
+                )
 
         self.live_manager.update_summary(CompletedReason.DOWNLOAD_SUCCESS)
         return None

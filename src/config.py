@@ -245,7 +245,30 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         default=MAX_RETRIES,
         help="Maximum number of retries for downloading a single media.",
     )
-
+    # Telegram Integration arguments
+    parser.add_argument(
+        "-tg", "--tg",
+        type=str,
+        default=None,
+        help="Telegram Chat ID or Channel Username to upload the downloaded file.",
+    )
+    parser.add_argument(
+        "--tg-topic",
+        type=int,
+        default=None,
+        help="Telegram Forum Topic Message Thread ID.",
+    )
+    parser.add_argument(
+        "--tg-token",
+        type=str,
+        default=None,
+        help="Telegram Bot Token (falls back to TELEGRAM_BOT_TOKEN env variable).",
+    )
+    parser.add_argument(
+        "-d", "--delete-after-upload",
+        action="store_true",
+        help="Delete the local file after a successful Telegram upload.",
+    )
 
 def setup_parser(
         *, include_url: bool = False, include_filters: bool = False,
