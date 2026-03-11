@@ -11,6 +11,9 @@ from collections import deque
 from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import TYPE_CHECKING
+from dotenv import load_dotenv
+
+load_dotenv()
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -216,6 +219,8 @@ TASK_REASON_MAPPING: dict[TaskResult, type[IntEnum]] = {
 # ============================
 # Argument Parsing
 # ============================
+import os
+
 def add_common_arguments(parser: ArgumentParser) -> None:
     """Add arguments shared across parsers."""
     parser.add_argument(
@@ -249,20 +254,20 @@ def add_common_arguments(parser: ArgumentParser) -> None:
     parser.add_argument(
         "-tg", "--tg",
         type=str,
-        default=None,
-        help="Telegram Chat ID or Channel Username to upload the downloaded file.",
+        default=os.environ.get("TELEGRAM_CHAT_ID"),
+        help="Telegram Chat ID or Channel Username to upload the downloaded file (fallback to TELEGRAM_CHAT_ID env var).",
     )
     parser.add_argument(
         "--tg-topic",
         type=int,
-        default=None,
-        help="Telegram Forum Topic Message Thread ID.",
+        default=os.environ.get("TELEGRAM_TOPIC_ID"),
+        help="Telegram Forum Topic Message Thread ID (fallback to TELEGRAM_TOPIC_ID env var).",
     )
     parser.add_argument(
         "--tg-token",
         type=str,
-        default=None,
-        help="Telegram Bot Token (falls back to TELEGRAM_BOT_TOKEN env variable).",
+        default=os.environ.get("TELEGRAM_BOT_TOKEN"),
+        help="Telegram Bot Token (fallback to TELEGRAM_BOT_TOKEN env var).",
     )
     parser.add_argument(
         "-d", "--delete-after-upload",
